@@ -1,0 +1,24 @@
+.DS_Store
+
+aws/*
+!aws/GuzzleHttp/Handler/CurlFactory.php
+!aws/index.html
+
+settings.php
+
+composer.lock
+
+# IDE Files
+#-------------------------
+/nbproject/
+.idea
+.idea/*
+
+## Sublime Text cache files
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+/tests/tests/
+/tests/results/
