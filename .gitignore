@@ -1,7 +1,7 @@
 .DS_Store
 
-aws/*
 !aws/GuzzleHttp/Handler/CurlFactory.php
+aws/*
 !aws/index.html
 
 settings.php
