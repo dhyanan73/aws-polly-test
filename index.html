@@ -1,142 +1,203 @@
 <!DOCTYPE html>
 <html>
-   <head>
-      <title>Submit Form Using AJAX and jQuery</title>
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-      <script>
-	  
-		var inProgress = false;
-		var taskID = false;
-		
-		$(document).ready(function(){
-		
-			$("#clear").click(function(){
-				$("#text").val('');
-				return false;
-			});
+	<head>
+	
+		<title>Submit Form Using AJAX and jQuery</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script src="js/wp-mediaelement.min.js"></script>
+		<script>
+		  
+			var inProgress = false;
+			var taskID = false;
 			
-			$("#submit").click(function(){
-				var text = $("#text").val().trim();
-				var dataString = 'ptext='+ text;
-				if(text=='') {
-					alert("Please Fill All Fields");
-				} else {
-					startWaiting();
+			$(document).ready(function(){
+			
+				$("#clear").click(function(){
+					$("#text").val('');
+					return false;
+				});
+				
+				$("#submit").click(function(){
+					var text = $("#text").val().trim();
+					var dataString = 'ptext='+ text;
+					if(text=='') {
+						alert("Please Fill All Fields");
+					} else {
+						startWaiting();
+						$.ajax({
+							type: "POST",
+							url: "pollysubmit.php",
+							data: dataString,
+							cache: false,
+							async: true, 
+							success: function(result){
+								taskID = result;
+							},
+							error: function(err) {
+								taskID = 'Error (' + err.status + '): ' + err.statusText;
+							}
+						});
+					}
+					return false;
+				});
+
+				setInterval(loadAudio, 1000);
+				
+			});
+			 
+			function loadAudio() {
+				
+				if (taskID && (!inProgress)) {
+					if (taskID.includes("Error")) {
+						clearInterval();
+						stopWaiting();
+						showErr(taskID);
+						taskID = false;
+						return false;
+					}
+					inProgress = true;
 					$.ajax({
 						type: "POST",
 						url: "pollysubmit.php",
-						data: dataString,
+						data: 'taskid=' + taskID,
 						cache: false,
 						async: true, 
-						success: function(result){
-							taskID = result;
+						success: function(data) {
+							if (data) {
+								isDone = true;
+								if (data.includes("Error")) {
+									clearInterval();
+									taskID = false;
+									stopWaiting();
+									showErr(data);
+								} else {
+									$.ajax({
+										type: "POST",
+										url: "audio-player.php",
+										data: 'audiof=' + data,
+										cache: false,
+										async: true, 
+										success: function(result){
+											clearInterval();
+											taskID = false;
+											$('#audio-player').html(result);
+											$("#audio-player").show();									
+											stopWaiting();
+										},
+										error: function(err) {
+											clearInterval();
+											taskID = false;
+											stopWaiting();
+											showErr('Error (' + err.status + '): ' + err.statusText)
+											inProgress = false;
+										}
+									});
+								}
+							}
+							inProgress = false;
 						},
 						error: function(err) {
-							taskID = 'Error (' + err.status + '): ' + err.statusText;
+							clearInterval();
+							taskID = false;
+							stopWaiting();
+							showErr('Error (' + err.status + '): ' + err.statusText)
+							inProgress = false;
+						},
+						complete:function(data){
+							inProgress = false;
 						}
 					});
 				}
-				return false;
-			});
-			
-			setInterval(loadAudio, 1000);
-			
-		});
-		 
-		function loadAudio() {
-			
-			if (taskID && (!inProgress)) {
-				if (taskID.includes("Error")) {
-					clearInterval();
-					stopWaiting();
-					showErr(taskID);
-					taskID = false;
-					return false;
-				}
-				inProgress = true;
-				$.ajax({
-					type: "POST",
-					url: "pollysubmit.php",
-					data: 'taskid=' + taskID,
-					cache: false,
-					async: true, 
-					success: function(data) {
-						if (data) {
-							isDone = true;
-							if (data.includes("Error")) {
-								clearInterval();
-								taskID = false;
-								stopWaiting();
-								showErr(data);
-							} else {
-								clearInterval();
-								taskID = false;
-								var audioElement = document.createElement('audio');
-								audioElement.setAttribute('src', data);
-								stopWaiting();
-								audioElement.play();
-							}
-						}
-						inProgress = false;
-					},
-					error: function(err) {
-						clearInterval();
-						taskID = false;
-						stopWaiting();
-						showErr('Error (' + err.status + '): ' + err.statusText)
-						inProgress = false;
-					},
-					complete:function(data){
-						inProgress = false;
-					}
-				});
+								
 			}
-							
-		}
 
-		function showErr(err) {
+			function showErr(err) {
 
-			var errP = document.createElement('p');
-			errP.innerText = err;
-			document.body.appendChild(errP);
-		
-		}
-		
-		function startWaiting() {
-		
-			$("#waiting").show();
-			$("#text").prop('disabled', true);
-			$("#submit").prop('disabled', true);
-			$("#clear").prop('disabled', true);
-		
-		}
+				var errP = document.createElement('p');
+				errP.innerText = err;
+				document.body.appendChild(errP);
+			
+			}
+			
+			function startWaiting() {
+			
+				$("#audio-player").hide();
+				$("#waiting").show();
+				$("#text").prop('disabled', true);
+				$("#submit").prop('disabled', true);
+				$("#clear").prop('disabled', true);				
+			
+			}
+			
+			function stopWaiting() {
+			
+				$("#waiting").hide();
+				$("#text").prop('disabled', false);
+				$("#submit").prop('disabled', false);
+				$("#clear").prop('disabled', false);
+			
+			}
+			 
+		</script>
 
+		<link href="css/wp-mediaelement.min.css" rel="stylesheet" type="text/css"/>		  
 		
-		function stopWaiting() {
+		<style>
+			/* Wrapper */
+			.audio-player{
+				background: #57a3bc;
+				padding: 5px;
+				border-radius: 10px;
+				margin-top: 30px;
+			}
+
+			/* Transparent background */
+			.audio-player .mejs-container,
+			.audio-player .mejs-container .mejs-controls,
+			.audio-player .mejs-embed, .mejs-embed body {
+				background: transparent !important;
+			}
+
+			/* Remove padding */
+			.audio-player .mejs-controls{
+				padding: 0;
+			}
+
+			/* Fix button style */
+			.mejs-button > button,
+			.mejs-button > button:hover,
+			.mejs-button > button:focus{
+				border-radius: 0;
+				background-color: transparent;
+			}
+
+			/* Player time current color */
+			.audio-player .mejs-controls .mejs-time-rail .mejs-time-current {
+				background-color: #37768b;
+			}
+		</style>
+	  
+	</head>
+	<body>
+	
+		<div id="mainform">
+			<h2>Submit string for polly processing.</h2>
+			<div id="form">
+				<h3>Enter you text!</h3>
+				<div>
+					<label>Text :</label> <br>
+					<textarea id="text" cols="80" rows="10" name="nome"></textarea> <br>
+					<input id="submit" type="button" value="Submit">&nbsp;&nbsp;<input id="clear" type="button" value="Clear"><br><br>
+				</div>
+			</div>
+		</div>
+
+		<div style="display:none;" id="audio-player" class="audio-player">
+		</div>
+
+		<div style="display:none;" id="waiting">
+			<img style="width: 30px; height: 30px;" alt="Caricamento in corso..." title="Caricamento in corso..." src="input-spinner.gif">
+		</div>
 		
-			$("#waiting").hide();
-			$("#text").prop('disabled', false);
-			$("#submit").prop('disabled', false);
-			$("#clear").prop('disabled', false);
-		
-		}
-		 
-      </script>
-   </head>
-   <body>
-      <div id="mainform">
-         <h2>Submit string for polly processing.</h2>
-         <div id="form">
-            <h3>Enter you text!</h3>
-            <div>
-               <label>Text :</label> <br>
-			   <textarea id="text" cols="80" rows="10" name="nome"></textarea> <br>
-               <input id="submit" type="button" value="Submit">&nbsp;&nbsp;<input id="clear" type="button" value="Clear"><br><br>
-            </div>
-         </div>
-      </div>
-      <div style="display:none;" id="waiting">
-		<img style="width: 30px; height: 30px;" alt="Caricamento in corso..." title="Caricamento in corso..." src="input-spinner.gif">
-      </div>
-   </body>
+	</body>
 </html>

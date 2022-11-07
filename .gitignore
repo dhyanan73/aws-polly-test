@@ -1,9 +1,6 @@
 .DS_Store
 
 aws/Aws/*
-!CurlFactory.php
-aws/GuzzleHttp/*
-!*/CurlFactory.php
 aws/JmesPath/*
 aws/Psr/*
 aws/Symfony/*
