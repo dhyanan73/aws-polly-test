@@ -1,8 +1,11 @@
 .DS_Store
 
-!aws/GuzzleHttp/Handler/CurlFactory.php
-aws/*
-!aws/index.html
+aws/Aws/*
+aws/GuzzleHttp/*
+!*/CurlFactory.php
+aws/JmesPath/*
+aws/Psr/*
+aws/Symfony/*
 
 settings.php
 
